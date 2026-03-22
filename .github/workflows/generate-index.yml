@@ -52,3 +52,5 @@ jobs:
           git add "**/index.json"
           git diff --cached --quiet || git commit -m "chore: auto-generate index.json for packages"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
