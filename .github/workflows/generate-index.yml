@@ -1,0 +1,54 @@
+name: Generate index.json for all packages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Generate index.json for each package folder
+        run: |
+          python3 << 'EOF'
+          import os
+          import json
+
+          # Folders to skip (not packages)
+          SKIP_DIRS = {".git", ".github", "node_modules"}
+
+          root = "."
+
+          for entry in os.scandir(root):
+              if not entry.is_dir():
+                  continue
+              if entry.name in SKIP_DIRS or entry.name.startswith("."):
+                  continue
+
+              folder = entry.path
+              files = []
+
+              for item in os.scandir(folder):
+                  if item.is_file() and item.name != "index.json":
+                      files.append(item.name)
+
+              files.sort()
+
+              index_path = os.path.join(folder, "index.json")
+              with open(index_path, "w") as f:
+                  json.dump(files, f, indent=2)
+
+              print(f"Generated {index_path}: {files}")
+          EOF
+
+      - name: Commit and push index.json files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "**/index.json"
+          git diff --cached --quiet || git commit -m "chore: auto-generate index.json for packages"
+          git push
